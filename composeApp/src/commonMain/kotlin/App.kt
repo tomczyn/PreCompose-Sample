@@ -10,6 +10,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +26,8 @@ import moe.tlaster.precompose.PreComposeApp
 import moe.tlaster.precompose.navigation.NavHost
 import moe.tlaster.precompose.navigation.rememberNavigator
 import moe.tlaster.precompose.navigation.transition.NavTransition
+import moe.tlaster.precompose.stateholder.LocalStateHolder
+import moe.tlaster.precompose.stateholder.StateHolder
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,11 +68,17 @@ private fun BottomSheetView(
         onDismissRequest = hideBottomSheet,
         dragHandle = null,
         content = {
-            BottomSheetContent {
-                scope.launch { sheetState.hide() }
-                    .invokeOnCompletion {
-                        if (!sheetState.isVisible) hideBottomSheet()
-                    }
+            val stateHolder = remember { StateHolder() }
+            CompositionLocalProvider(LocalStateHolder provides stateHolder) {
+                BottomSheetContent {
+                    scope.launch { sheetState.hide() }
+                        .invokeOnCompletion {
+                            if (!sheetState.isVisible) hideBottomSheet()
+                        }
+                }
+            }
+            DisposableEffect(Unit) {
+                onDispose { stateHolder.close() }
             }
         }
     )
